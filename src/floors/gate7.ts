@@ -16,7 +16,7 @@ export class Gate7 extends Floor {
   readonly plaque = GATE_PLAQUES[7];
   readonly top = gateTop(7);
   readonly bottom = gateTop(7) + G7_ROOM;
-  readonly focusY = gateTop(7) + G7_ROOM / 2 - 60;
+  readonly focusY = gateTop(7) + 440; // view starts at the top of the pit (odometer, bells, lever in frame)
 
   private streaks = new Graphics();
   private scroll = 0;

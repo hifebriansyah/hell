@@ -1,8 +1,9 @@
 import './style.css';
 import Matter from 'matter-js';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import { floorAt, G, SCENE_X0, SCENE_X1, STEP, TINKER_DEFAULT, W, WORLD_BOTTOM, type Layers } from './engine/game';
 import { Fx } from './engine/fx';
+import { vGradient } from './engine/textures';
 import { sfx, unlockAudio } from './engine/audio';
 import { Critter } from './critters/critter';
 import { byId, CRITTERS, type CritterId } from './critters/defs';
@@ -65,8 +66,23 @@ async function boot() {
     over: new Container(),
   };
   layers.glow.blendMode = 'add';
-  // stage blackout: hides the floors above/below the gate the camera has settled on
-  const blackout = new Graphics();
+  // stage blackout: hides the floor below the current gate
+  const blackout = new Container();
+  const FEATHER = 100;
+  const ease = (dark: 'top' | 'bottom') => {
+    // smoothstep-eased alpha ramp, so the edge has no visible banding
+    const stops: [number, string][] = [];
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16, e = t * t * (3 - 2 * t);
+      stops.push([t, `rgba(20,8,18,${(dark === 'top' ? 1 - e : e).toFixed(4)})`]);
+    }
+    return stops;
+  };
+  const bSolidBot = new Graphics();
+  const bFadeBot = new Sprite(vGradient('blackout-bot', ease('bottom')));
+  bFadeBot.height = FEATHER;
+  let barH = 0; // current height of the sticky bottom bar (world units)
+  blackout.addChild(bSolidBot, bFadeBot);
   world.addChild(layers.bg, layers.back, layers.critters, layers.front, layers.fx, layers.glow, layers.over, blackout);
   const fx = new Fx();
   layers.fx.addChild(fx.view);
@@ -124,7 +140,9 @@ async function boot() {
   const cam = { x: 600, y: rim.focusY, ty: rim.focusY, s: 1 };
   const viewH = () => app.screen.height / cam.s;
   const viewW = () => app.screen.width / cam.s;
-  const fitScale = () => { cam.s = Math.min(app.screen.height / 1060, app.screen.width / 860); };
+  // zoomed so a gate's room fills the screen top to bottom: ceiling at the top edge, floor along the bottom edge
+  const VIEW_H = 870;
+  const fitScale = () => { cam.s = Math.min(app.screen.height / VIEW_H, app.screen.width / 860); };
   fitScale();
   /** the floor the camera is heading to; every scroll gesture settles on one */
   let snapFloor = 0;
@@ -458,26 +476,19 @@ async function boot() {
     world.scale.set(cam.s);
     world.position.set(app.screen.width / 2 - cam.x * cam.s, app.screen.height / 2 - cam.y * cam.s);
 
-    // blackout everything outside the settled gate; fades away while gliding between gates
+    // blackout along the bottom of the screen: hides the next level down. It is sticky (pinned to the screen, never
+    // scrolls with the world), always on, and as tall as the leak below the gate you are nearest to when settled on it.
+    // Nothing above is hidden: you can always see where you came from.
     {
-      const fi = nearest(cam.y);
-      const fl = floors[fi];
-      const k = clamp(1 - Math.abs(cam.y - fl.focusY) / 160, 0, 1);
-      const b = blackout;
-      b.clear();
-      if (k > 0.01) {
-        const x0 = cam.x - vw, w = vw * 2;
-        const feather = 36, steps = 6;
-        const shade = (y0: number, y1: number, a: number) => { if (y1 > y0) b.rect(x0, y0, w, y1 - y0).fill({ color: 0x140812, alpha: a * k }); };
-        // above the gate (the Rim has open sky above, so nothing to hide there)
-        // fully dark beyond the gate's edges; the soft edge sits just inside them, over ceiling and floor slab
-        if (fi > 0) {
-          shade(cam.y - vh, fl.top, 1);
-          for (let i = 0; i < steps; i++) shade(fl.top + (i * feather) / steps, fl.top + ((i + 1) * feather) / steps, 1 - (i + 0.5) / steps);
-        }
-        shade(fl.bottom, cam.y + vh, 1);
-        for (let i = 0; i < steps; i++) shade(fl.bottom - feather + (i * feather) / steps, fl.bottom - feather + ((i + 1) * feather) / steps, (i + 0.5) / steps);
-      }
+      const fl = floors[nearest(cam.y)];
+      const gap = Math.max(0, fl.focusY + vh / 2 - fl.bottom); // world units of the next level that would show
+      barH += (gap - barH) * Math.min(1, dt * 8); // ease between gates instead of jumping
+      const x0 = cam.x - vw, w = vw * 2;
+      const top = cam.y + vh / 2 - barH;
+      bSolidBot.clear().rect(x0, top, w, barH + 4).fill(0x140812);
+      bFadeBot.position.set(x0, top - FEATHER);
+      bFadeBot.width = w;
+      bFadeBot.visible = barH > 1;
     }
     G.view = { top: cam.y - vh / 2, bottom: cam.y + vh / 2 };
     G.camY = cam.y;

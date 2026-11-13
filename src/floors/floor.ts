@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { G, gateBottom, gateFloor, gateTop, SCENE_X0, SCENE_X1, TRAP_SIDE, trapSpan } from '../engine/game';
+import { FLOOR_SLAB, G, gateBottom, gateFloor, gateTop, SCENE_X0, SCENE_X1, TRAP_SIDE, trapSpan } from '../engine/game';
 import { glowDot, vGradient } from '../engine/textures';
 import { sfx } from '../engine/audio';
 import type { Critter } from '../critters/critter';
@@ -157,7 +157,7 @@ export class Trapdoor {
     const shaft = new Sprite(vGradient('trap-shaft', [[0, '#12060f'], [1, '#3b1440']]));
     shaft.position.set(this.x0, floorY);
     shaft.width = this.x1 - this.x0;
-    shaft.height = 100;
+    shaft.height = FLOOR_SLAB;
     L.bg.addChild(shaft);
     L.front.addChild(this.g);
     this.body = Bodies.rectangle((this.x0 + this.x1) / 2, floorY + 14, this.x1 - this.x0, 28, {
@@ -274,7 +274,7 @@ export abstract class GateFloor extends Floor {
     const span = side ? trapSpan(side) : null;
     const floor = new Graphics();
     const slab = (x0: number, x1: number) => {
-      floor.rect(x0, this.floorY, x1 - x0, 100).fill(style.floor);
+      floor.rect(x0, this.floorY, x1 - x0, FLOOR_SLAB).fill(style.floor);
       floor.rect(x0, this.floorY, x1 - x0, 16).fill(style.lip);
       if (style.tiles !== false) for (let x = x0 + 40; x < x1 - 60; x += 110) floor.roundRect(x, this.floorY + 36, 80, 12, 6).fill({ color: 0xffffff, alpha: 0.05 });
     };
@@ -283,12 +283,12 @@ export abstract class GateFloor extends Floor {
     if (span) {
       slab(0, span.x0);
       slab(span.x1, 1200);
-      this.wall((SCENE_X0 + span.x0) / 2, this.floorY + 50, span.x0 - SCENE_X0, 100);
-      this.wall((span.x1 + SCENE_X1) / 2, this.floorY + 50, SCENE_X1 - span.x1, 100);
+      this.wall((SCENE_X0 + span.x0) / 2, this.floorY + FLOOR_SLAB / 2, span.x0 - SCENE_X0, FLOOR_SLAB);
+      this.wall((span.x1 + SCENE_X1) / 2, this.floorY + FLOOR_SLAB / 2, SCENE_X1 - span.x1, FLOOR_SLAB);
       this.trap = new Trapdoor(this.floorY, side!);
     } else {
       slab(0, 1200);
-      this.wall((SCENE_X0 + SCENE_X1) / 2, this.floorY + 50, SCENE_X1 - SCENE_X0, 100);
+      this.wall((SCENE_X0 + SCENE_X1) / 2, this.floorY + FLOOR_SLAB / 2, SCENE_X1 - SCENE_X0, FLOOR_SLAB);
       this.trap = null;
     }
     L.front.addChild(floor);

@@ -1,5 +1,7 @@
 // Tiny offline cache: network first, fall back to what was cached. Built files are hashed, so this stays safe.
-const CACHE = 'hell-v1';
+// The cache is named after the build (the placeholder is filled in by vite.config.ts on every build),
+// so a new deploy activates a new cache and the activate step deletes every older one.
+const CACHE = 'hell-__BUILD_ID__';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
   e.waitUntil(

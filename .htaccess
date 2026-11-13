@@ -1,9 +1,13 @@
 # Local Apache only (not part of the build).
 # Serves the built site from dist/ at http://localhost/for-fun/hell/ (build it with `npm run build:local`).
 # Needs mod_rewrite and `AllowOverride FileInfo` (or All) for this folder, like ../zodiac/.htaccess.
-# Always check with the server for a fresh copy while developing (a 304 answer is cheap).
+# Caching: hashed bundles in assets/ never change, so they can be cached for a year;
+# everything else (index.html, sw.js, manifest, icons) is re-checked on every load (a 304 answer is cheap).
 <IfModule mod_headers.c>
   Header set Cache-Control "no-cache"
+  <If "%{REQUEST_URI} =~ m#/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
 </IfModule>
 
 <IfModule mod_rewrite.c>

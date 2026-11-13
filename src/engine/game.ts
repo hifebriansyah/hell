@@ -10,9 +10,10 @@ export const W = 1200;
 export const SCENE_X0 = -1700;
 export const SCENE_X1 = 2900;
 export const RIM_GROUND = 860; // the Rim's walking surface
-export const SLAB = 200; // thickness of the crust between the Rim and Gate 1
+export const SLAB = 300; // crust between the Rim and Gate 1: thick enough that Gate 1 never sees the surface ground
 export const ROOM = 840; // height of one gate's room
-export const PITCH = 940; // room + the 100px floor slab under it
+export const FLOOR_SLAB = 180; // thick rock between gates: thick enough that the camera, resting on a gate, never sees the level above or below
+export const PITCH = ROOM + FLOOR_SLAB; // room + the floor slab under it
 export const G7_ROOM = 1500; // the bottomless pit is taller
 
 /** ceiling, walking surface and bottom (end of floor slab) of gate n (1..7) */
@@ -21,8 +22,8 @@ export const gateFloor = (n: number) => gateTop(n) + ROOM;
 export const gateBottom = (n: number) => (n === 7 ? gateTop(7) + G7_ROOM : gateTop(n) + PITCH);
 export const WORLD_BOTTOM = gateBottom(7);
 
-export const G1_TOP = gateTop(1); // 1060
-export const G1_FLOOR = gateFloor(1); // 1900
+export const G1_TOP = gateTop(1); // 1160
+export const G1_FLOOR = gateFloor(1); // 2000
 export const HOLE = { x0: 530, x1: 870 }; // the mouth in the Rim, right above the cauldron
 export const STEP = 1000 / 60;
 

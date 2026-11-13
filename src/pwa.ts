@@ -25,7 +25,9 @@ window.addEventListener('appinstalled', () => {
 
 export function initPwa(btn: HTMLElement, toast: (t: string) => void) {
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
+    // updateViaCache 'none': always fetch sw.js itself fresh, so a new build's worker is noticed right away
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: 'none' }).catch(() => {});
+    console.info('Jahannam Diorama build', __BUILD_ID__);
   }
   // Chrome/Edge/Android give us a prompt; iOS Safari has none, so it gets a how-to toast instead
   const refresh = () => { btn.hidden = standalone() || !(deferred || isIos()); };

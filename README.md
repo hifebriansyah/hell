@@ -19,6 +19,17 @@ npm run build:local  # dist/ for http://localhost/for-fun/hell/ (served by .htac
 
 Deep links: `#rim`, `#gate-1` … `#gate-7`.
 
+### Cache busting
+
+Every build gets an id (`<git short hash>-<timestamp>`, see `cacheBust()` in [vite.config.ts](vite.config.ts)):
+
+- JS/CSS bundles are content-hashed by Vite (`assets/index-AbC123.js`), so Apache caches `assets/` for a year (`immutable`).
+- Fixed-name files from `public/` get `?v=<id>`: the favicons, apple-touch icon and manifest links in `index.html`, and the icons inside the manifest.
+- The service worker's cache is named `hell-<id>`, so a new build switches to a fresh cache and deletes the old ones; `sw.js` is always re-fetched (`updateViaCache: 'none'`).
+- Everything outside `assets/` is served `no-cache` (revalidated each load).
+- `dist/version.json` and the console line `Jahannam Diorama build <id>` tell you which build is running.
+
+
 ## Controls
 
 | Input | Does |

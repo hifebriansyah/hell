@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { G, HOLE, RIM_GROUND, G1_TOP, SCENE_X0, SCENE_X1 } from '../engine/game';
+import { G, HOLE, RIM_GROUND, SLAB, G1_TOP, SCENE_X0, SCENE_X1 } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { softDot, vGradient } from '../engine/textures';
 import { drawLantern, Floor, Wobble, type Plaque, type PointerHit } from './floor';
@@ -162,8 +162,8 @@ export class Rim extends Floor {
     L.glow.addChild(crackGlow);
 
     // physics: ground on both sides of the mouth, the edges, a lid on the sky
-    this.wall((SCENE_X0 + HOLE.x0) / 2, RIM_GROUND + 100, HOLE.x0 - SCENE_X0, 200);
-    this.wall((HOLE.x1 + SCENE_X1) / 2, RIM_GROUND + 100, SCENE_X1 - HOLE.x1, 200);
+    this.wall((SCENE_X0 + HOLE.x0) / 2, RIM_GROUND + SLAB / 2, HOLE.x0 - SCENE_X0, SLAB);
+    this.wall((HOLE.x1 + SCENE_X1) / 2, RIM_GROUND + SLAB / 2, SCENE_X1 - HOLE.x1, SLAB);
     this.wall((SCENE_X0 + SCENE_X1) / 2, -1700, SCENE_X1 - SCENE_X0, 80);
 
     // ----- pokeable props -----
