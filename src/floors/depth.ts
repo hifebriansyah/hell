@@ -12,6 +12,9 @@ import { glowDot, softDot, vGradient } from '../engine/textures';
  */
 export interface DepthLayer { c: Container; d: number; }
 
+/** furthest a d = 1 layer may slide vertically (mouse "head" movement + the glide while scrolling between gates) */
+const SLIDE = 60;
+
 interface Mote { g: Sprite; x: number; y: number; vy: number; vx: number; ph: number; }
 
 export class DepthStack {
@@ -57,9 +60,17 @@ export class DepthStack {
     const px = G.parallax.x, py = G.parallax.y;
     // background lags behind the camera when gliding between gates; foreground rushes ahead
     const glide = G.camY - this.focusY;
+    // Each layer is drawn for exactly the room's height, so sliding it up/down would open a gap at the ceiling or the
+    // floor. Instead every layer is blown up around the room's centre by just enough to cover its largest slide
+    // (farther layers slide more, so they are scaled more; that also reads as depth), and the slide is capped there.
+    const cx = (SCENE_X0 + SCENE_X1) / 2, cy = (this.y0 + this.y1) / 2, H = this.y1 - this.y0;
     for (const l of this.layers) {
-      l.c.x = px * 30 * l.d;
-      l.c.y = py * 16 * l.d + glide * l.d * 0.3;
+      const M = SLIDE * l.d;
+      const k = 1 + (2 * M + 8) / H; // +8: a hair extra so no seam shows at the very edge
+      l.c.pivot.set(cx, cy);
+      l.c.scale.set(k);
+      l.c.x = cx + px * 30 * l.d;
+      l.c.y = cy + Math.max(-M, Math.min(M, py * 16 * l.d + glide * l.d * 0.3));
     }
     const t = G.time;
     for (const set of this.motes) {
