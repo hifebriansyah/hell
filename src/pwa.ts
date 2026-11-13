@@ -9,7 +9,7 @@ let deferred: InstallEvent | null = null;
 let onChange: () => void = () => {};
 
 const standalone = () =>
-  window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+  window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 // listen at import time: the event can fire before the game finishes booting
