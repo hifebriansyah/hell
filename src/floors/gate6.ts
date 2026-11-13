@@ -178,7 +178,7 @@ export class Gate6 extends GateFloor {
       tg.t += 1 / 60;
       const m = tg.c.mouth();
       const d = Math.hypot(m.x - tg.ax, m.y - tg.ay);
-      if (d > 430 || tg.t > 14 || tg.c.state === 'ko' || !G.critters.includes(tg.c)) this.unstick(tg, d > 430);
+      if (!tg.c.tongue || d > 430 || tg.t > 14 || tg.c.state === 'ko' || !G.critters.includes(tg.c)) this.unstick(tg, tg.c.tongue && d > 430);
       else if (d > 60) tg.c.mood = 'worried';
     }
   }

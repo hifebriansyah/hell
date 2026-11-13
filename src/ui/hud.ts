@@ -112,7 +112,7 @@ export class Hud {
     if (!b) return;
     b.classList.toggle('out', out);
     const d = CRITTERS.find((c) => c.id === id)!;
-    b.title = out ? `${d.name}: tap to send home` : `${d.name} (${d.mischief.toLowerCase()})`;
+    b.title = out ? `${d.name}: tap to bring here or send home` : `${d.name} (${d.mischief.toLowerCase()})`;
   }
 
   setFloor(f: number, plaque: Plaque) {

@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#2a1838" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Diorama" />
     <title>Jahannam Diorama</title>
     <meta name="description" content="A tactile cartoon cross-section of the seven gates: drag critters, poke props, bend the physics." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,6 +50,9 @@
       <button id="logBtn" title="Discoveries: ways they popped" aria-label="Discoveries">
         <svg viewBox="0 0 24 24"><path d="M4 15.5 12 4l8 11.5z" fill="currentColor"/><ellipse cx="12" cy="17" rx="9" ry="3.2" fill="currentColor" opacity=".55"/><circle cx="12" cy="3.6" r="1.8" fill="currentColor"/></svg>
         <b id="logCount" hidden>0</b>
+      </button>
+      <button id="installBtn" title="Install as an app" aria-label="Install app" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
       </button>
       <button id="muteBtn" title="Sound on/off" aria-label="Mute">
         <svg class="on" viewBox="0 0 24 24"><path d="M4 9.5h3.3L12 5.2v13.6l-4.7-4.3H4z" fill="currentColor"/><path d="M15 8.6a4.6 4.6 0 0 1 0 6.8M17.4 6.2a8 8 0 0 1 0 11.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>

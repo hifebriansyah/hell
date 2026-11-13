@@ -17,6 +17,7 @@ import { Gate6 } from './floors/gate6';
 import { Gate7 } from './floors/gate7';
 import type { Floor, PointerHit } from './floors/floor';
 import { Hud } from './ui/hud';
+import { initPwa } from './pwa';
 import { DISCOVERIES, discoveries } from './data/discoveries';
 
 const { Engine, Events, Body, Constraint, Composite } = Matter;
@@ -104,6 +105,7 @@ async function boot() {
   });
 
   hud = new Hud();
+  initPwa(document.getElementById('installBtn')!, (t) => hud.toast(t));
   const rim = new Rim();
   const gate1 = new Gate1();
   const floors: Floor[] = [rim, gate1, new Gate2(), new Gate3(), new Gate4(), new Gate5(), new Gate6(), new Gate7()];
@@ -131,15 +133,15 @@ async function boot() {
   hud.onGoto = (f) => goto(f);
 
   // ----- critters -----
+  const spawnPos = (floor: number) => {
+    if (floor === 0) return { x: Math.random() < 0.55 ? rnd(170, 450) : rnd(930, 1100), y: Math.max(-1400, cam.ty - viewH() / 2 - 120) };
+    if (floor === 1) return { x: rnd(620, 780), y: gate1.top - 120 }; // through the Rim's mouth, straight into the pot
+    return floors[floor].spawnPoint();
+  };
   const spawn = (id: CritterId, quiet = false) => {
     if (G.critters.some((c) => c.def.id === id)) return;
     const def = byId(id);
-    let p: { x: number; y: number };
-    if (G.viewFloor === 0) {
-      p = { x: Math.random() < 0.55 ? rnd(170, 450) : rnd(930, 1100), y: Math.max(-1400, cam.y - viewH() / 2 - 120) };
-    } else if (G.viewFloor === 1) {
-      p = { x: rnd(620, 780), y: gate1.top - 120 }; // through the Rim's mouth, straight into the pot
-    } else p = floors[G.viewFloor].spawnPoint();
+    const p = spawnPos(floorAt(cam.ty));
     const c = new Critter(def, p.x, p.y);
     Body.setVelocity(c.body, { x: 0, y: 6 });
     const hats = discoveries.hats();
@@ -155,6 +157,21 @@ async function boot() {
     if (!quiet) hud.quip(def.name.split(' ')[0], def.quips[Math.floor(Math.random() * def.quips.length)]);
     if (G.critters.length === CRITTERS.length) G.discover('rim-full', c);
   };
+  const teleport = (c: Critter, floor: number) => {
+    if (grab?.c === c) release(false);
+    c.tongue = false;
+    if (floor < 7) c.setWeighted(false);
+    fx.emit('smoke', c.x, c.y, 12, { spread: 3, tint: 0xf6d6e6, size: 1.4 });
+    const p = spawnPos(floor);
+    Body.setPosition(c.body, p);
+    Body.setVelocity(c.body, { x: 0, y: 6 });
+    Body.setAngle(c.body, 0);
+    Body.setAngularVelocity(c.body, 0);
+    lastFloor.set(c, c.floor);
+    fx.emit('smoke', p.x, p.y, 10, { spread: 2.5, tint: 0xffe4b8, size: 1.2 });
+    sfx.whoosh();
+    sfx.voice(c.def.id);
+  };
   const unspawn = (id: CritterId) => {
     const i = G.critters.findIndex((c) => c.def.id === id);
     if (i < 0) return;
@@ -166,7 +183,13 @@ async function boot() {
     G.critters.splice(i, 1);
     hud.setOut(id, false);
   };
-  hud.onCritter = (id) => (G.critters.some((c) => c.def.id === id) ? unspawn(id) : spawn(id));
+  hud.onCritter = (id) => {
+    const c = G.critters.find((x) => x.def.id === id);
+    if (!c) { spawn(id); return; }
+    const target = floorAt(cam.ty);
+    if (c.floor !== target) teleport(c, target);
+    else unspawn(id);
+  };
   const lastFloor = new Map<Critter, number>();
 
   // tray icons rendered from the rigs themselves
