@@ -315,25 +315,28 @@ async function boot() {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('pointerleave', () => { G.pointer.active = false; });
-  // Wheel / trackpad: one gesture = one gate. Deltas pile up until they pass a threshold, then the
-  // camera glides to the next gate and further input is ignored until the wheel goes quiet
-  // (so a trackpad's momentum tail doesn't skip several gates).
-  let wheelAcc = 0;
-  let wheelLock = false;
+  // Wheel / trackpad: scroll freely while the wheel is moving; snap to a gate only once it stops.
+  // A scroll that travelled a good way toward the next gate lands there, otherwise it settles back.
+  let wheelStart: number | null = null; // camera y when this scroll began
   let wheelIdle = 0;
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const k = e.deltaMode === 1 ? 30 : 1;
+    const dy = (e.deltaY * k) / cam.s;
     cam.x += (e.deltaX * k) / cam.s; // sideways trackpad pan on narrow screens
+    if (wheelStart === null) wheelStart = cam.ty;
+    // trackpads (small pixel deltas) follow the fingers 1:1; a notched wheel glides
+    const trackpad = e.deltaMode === 0 && Math.abs(e.deltaY) < 50;
+    cam.ty += dy;
+    if (trackpad) cam.y += dy;
     clearTimeout(wheelIdle);
-    wheelIdle = window.setTimeout(() => { wheelLock = false; wheelAcc = 0; }, 220);
-    if (wheelLock) return;
-    wheelAcc += e.deltaY * k;
-    if (Math.abs(wheelAcc) > 40) {
-      goto(snapFloor + Math.sign(wheelAcc));
-      wheelLock = true;
-      wheelAcc = 0;
-    }
+    wheelIdle = window.setTimeout(() => {
+      const from = nearest(wheelStart ?? cam.ty);
+      const travel = cam.ty - (wheelStart ?? cam.ty);
+      const near = nearest(cam.ty);
+      goto(near === from && Math.abs(travel) > viewH() * 0.2 ? from + Math.sign(travel) : near);
+      wheelStart = null;
+    }, 160);
   }, { passive: false });
 
   window.addEventListener('keydown', (e) => {

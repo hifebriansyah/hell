@@ -26,7 +26,7 @@ Deep links: `#rim`, `#gate-1` … `#gate-7`.
 | Drag a critter | Dangle and fling |
 | Tap a critter | Boop (on Gate 2: pluck the coat off) |
 | Double-tap a critter | Cycle through unlocked hats |
-| Drag empty space, mouse wheel / trackpad | Scroll the dollhouse. It always snaps to a gate: one wheel or trackpad gesture = one gate, and a short drag springs back |
+| Drag empty space, mouse wheel / trackpad | Scroll the dollhouse freely; when you stop, it settles on the nearest gate (or the next one if you went a fifth of a screen toward it) |
 | Hold a dragged critter near the top or bottom edge | Carry it to another floor |
 | Right rail (`⌂`, 1–7) or keys `0`–`7`, `↑`/`↓` | Jump to a floor |
 | Critter tray (left edge) | Drop a critter in (it arrives on the floor you are looking at), tap again to send it home |
