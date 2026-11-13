@@ -3,6 +3,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { G } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate3Depth } from './depth-gates';
 import { clamp, GateFloor, Wobble, type PointerHit } from './floor';
 import type { Critter } from '../critters/critter';
 
@@ -17,6 +18,7 @@ type PressState = 'up' | 'slam' | 'down' | 'rise' | 'drag';
 export class Gate3 extends GateFloor {
   readonly name = 'Gate 3 · al-Hutamah';
   readonly plaque = GATE_PLAQUES[3];
+  private depth: ReturnType<typeof buildGate3Depth>;
 
   private head = new Container();
   private rod = new Graphics();
@@ -38,7 +40,8 @@ export class Gate3 extends GateFloor {
   private dayT = 0;
 
   constructor() {
-    super(3, { wall: [[0, '#2e1838'], [0.6, '#5a2844'], [1, '#8a3c48']], floor: 0x3e1c38, lip: 0x8a4a58, brick: 0.06 });
+    super(3, { wall: [[0, '#3a1a40'], [0.4, '#704062'], [0.75, '#b45e64'], [1, '#e08a70']], floor: 0x3e1c38, lip: 0x8a4a58, brick: 0, tiles: false });
+    this.depth = buildGate3Depth(this.top, this.floorY, this.focusY);
     const L = G.layers;
     const fy = this.floorY;
     this.upY = this.top + 330;
@@ -201,6 +204,7 @@ export class Gate3 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     if (this.state === 'down') {
       this.holdT -= dt;
       if (this.holdT <= 0) { this.state = 'rise'; sfx.creak(); }

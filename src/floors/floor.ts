@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { G, gateBottom, gateFloor, gateTop, TRAP_SIDE, trapSpan } from '../engine/game';
+import { G, gateBottom, gateFloor, gateTop, SCENE_X0, SCENE_X1, TRAP_SIDE, trapSpan } from '../engine/game';
 import { glowDot, vGradient } from '../engine/textures';
 import { sfx } from '../engine/audio';
 import type { Critter } from '../critters/critter';
@@ -226,7 +226,8 @@ export interface GateStyle {
   wall: [number, string][]; // vertical gradient stops for the back wall
   floor: number;
   lip: number;
-  brick?: number; // alpha of the faint wall pattern
+  brick?: number; // alpha of the faint wall pattern (0 = none)
+  tiles?: boolean; // faint tile marks on the floor slab (default on)
 }
 
 /** Shared shell for Gates 1-6 (Gate 7 has no floor): back wall, cutaway earth, floor slab, trapdoor. */
@@ -250,13 +251,13 @@ export abstract class GateFloor extends Floor {
     const L = G.layers;
 
     const wallBg = new Sprite(vGradient('wall-' + n, style.wall));
-    wallBg.position.set(0, this.top);
-    wallBg.width = 1200;
+    wallBg.position.set(SCENE_X0, this.top);
+    wallBg.width = SCENE_X1 - SCENE_X0;
     wallBg.height = this.floorY - this.top;
     L.bg.addChild(wallBg);
     const bricks = new Graphics();
     const a = style.brick ?? 0.05;
-    for (let row = 0; row < 15; row++) {
+    for (let row = 0; a > 0 && row < 15; row++) {
       const y = this.top + 30 + row * 56;
       const off = row % 2 ? 0 : 60;
       for (let x = -60 + off; x < 1200; x += 120) {
@@ -266,19 +267,7 @@ export abstract class GateFloor extends Floor {
     }
     L.bg.addChild(bricks);
 
-    // cutaway earth on both sides of the dollhouse
-    const earth = new Graphics();
-    earth.rect(-1400, this.top, 1400, this.bottom - this.top).fill(0x2a1230);
-    earth.rect(1200, this.top, 1400, this.bottom - this.top).fill(0x2a1230);
-    earth.rect(-22, this.top, 22, this.bottom - this.top).fill(0x5a2a4c);
-    earth.rect(1200, this.top, 22, this.bottom - this.top).fill(0x5a2a4c);
-    for (let i = 0; i < 16; i++) {
-      const x = Math.random() < 0.5 ? rnd(-1300, -60) : rnd(1260, 2500);
-      earth.ellipse(x, rnd(this.top + 40, this.bottom - 20), rnd(14, 40), rnd(8, 20)).fill({ color: 0x3e1c42, alpha: 0.8 });
-    }
-    L.front.addChild(earth);
-    this.wall(-40, (this.top + this.bottom) / 2, 80, this.bottom - this.top + 40);
-    this.wall(1240, (this.top + this.bottom) / 2, 80, this.bottom - this.top + 40);
+    // no side walls: the hall runs edge to edge. The screen-edge boundary lives in main.ts (it follows the view).
 
     // floor slab, leaving the trapdoor gap open
     const side = n <= 6 ? TRAP_SIDE[n] : null;
@@ -287,17 +276,19 @@ export abstract class GateFloor extends Floor {
     const slab = (x0: number, x1: number) => {
       floor.rect(x0, this.floorY, x1 - x0, 100).fill(style.floor);
       floor.rect(x0, this.floorY, x1 - x0, 16).fill(style.lip);
-      for (let x = x0 + 40; x < x1 - 60; x += 110) floor.roundRect(x, this.floorY + 36, 80, 12, 6).fill({ color: 0xffffff, alpha: 0.05 });
+      if (style.tiles !== false) for (let x = x0 + 40; x < x1 - 60; x += 110) floor.roundRect(x, this.floorY + 36, 80, 12, 6).fill({ color: 0xffffff, alpha: 0.05 });
     };
+    slab(SCENE_X0, 0);
+    slab(1200, SCENE_X1);
     if (span) {
       slab(0, span.x0);
       slab(span.x1, 1200);
-      this.wall(span.x0 / 2 - 20, this.floorY + 50, span.x0 + 40, 100);
-      this.wall((span.x1 + 1240) / 2, this.floorY + 50, 1240 - span.x1, 100);
+      this.wall((SCENE_X0 + span.x0) / 2, this.floorY + 50, span.x0 - SCENE_X0, 100);
+      this.wall((span.x1 + SCENE_X1) / 2, this.floorY + 50, SCENE_X1 - span.x1, 100);
       this.trap = new Trapdoor(this.floorY, side!);
     } else {
       slab(0, 1200);
-      this.wall(600, this.floorY + 50, 1280, 100);
+      this.wall((SCENE_X0 + SCENE_X1) / 2, this.floorY + 50, SCENE_X1 - SCENE_X0, 100);
       this.trap = null;
     }
     L.front.addChild(floor);

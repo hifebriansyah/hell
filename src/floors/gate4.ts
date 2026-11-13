@@ -3,6 +3,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { G } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate4Depth } from './depth-gates';
 import { CAT_PROP, CAT_WORLD, CAT_CRITTER, dragBody, GateFloor, rnd, Wobble, type PointerHit } from './floor';
 import type { Critter } from '../critters/critter';
 
@@ -44,6 +45,7 @@ function drawFruit() {
 export class Gate4 extends GateFloor {
   readonly name = 'Gate 4 · al-Sa’ir';
   readonly plaque = GATE_PLAQUES[4];
+  private depth: ReturnType<typeof buildGate4Depth>;
 
   private tree = new Container();
   private treeW = new Wobble(40, 3);
@@ -51,7 +53,8 @@ export class Gate4 extends GateFloor {
   private fruits: Fruit[] = [];
 
   constructor() {
-    super(4, { wall: [[0, '#2c1230'], [0.55, '#5e2238'], [1, '#a8403a']], floor: 0x3a1a30, lip: 0x8a4450, brick: 0.04 });
+    super(4, { wall: [[0, '#3a1230'], [0.4, '#7a2a44'], [0.75, '#c8503e'], [1, '#f08a52']], floor: 0x3a1a30, lip: 0x8a4450, brick: 0, tiles: false });
+    this.depth = buildGate4Depth(this.top, this.floorY, this.focusY);
     const L = G.layers;
     const fy = this.floorY;
 
@@ -205,6 +208,7 @@ export class Gate4 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     const t = G.time;
     const sw = this.treeW.update(dt);
     this.tree.rotation = sw * 0.02 + Math.sin(t * 0.7) * 0.004;

@@ -6,6 +6,9 @@ import type { Critter } from '../critters/critter';
 // World constants (pixels; y grows downward, like matter-js).
 // The dollhouse is one tall cross-section: the Rim on top, then Gates 1-7 stacked below.
 export const W = 1200;
+/** how far scenery extends sideways so even ultrawide monitors never see a blank edge (physics stays 0..W) */
+export const SCENE_X0 = -1700;
+export const SCENE_X1 = 2900;
 export const RIM_GROUND = 860; // the Rim's walking surface
 export const SLAB = 200; // thickness of the crust between the Rim and Gate 1
 export const ROOM = 840; // height of one gate's room
@@ -71,6 +74,10 @@ export interface Game {
   pointer: { x: number; y: number; active: boolean };
   /** the camera's visible world rectangle */
   view: { top: number; bottom: number };
+  /** where the viewer is "looking" (-1..1 each axis), from the mouse, or an idle sway on touch; drives background parallax */
+  parallax: { x: number; y: number };
+  /** camera centre y (background layers lag behind it while gliding between gates) */
+  camY: number;
 }
 
 // Filled in by main.ts before anything else runs.

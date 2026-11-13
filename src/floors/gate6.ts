@@ -3,6 +3,7 @@ import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { G } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate6Depth } from './depth-gates';
 import { CAT_PROP, CAT_WORLD, CAT_CRITTER, dragBody, GateFloor, rnd, type PointerHit } from './floor';
 import type { Critter } from '../critters/critter';
 
@@ -18,6 +19,7 @@ interface Icicle { g: Graphics; x: number; body: Matter.Body | null; regrow: num
 export class Gate6 extends GateFloor {
   readonly name = 'Gate 6 · al-Jahim';
   readonly plaque = GATE_PLAQUES[6];
+  private depth: ReturnType<typeof buildGate6Depth>;
 
   private tongues: Tongue[] = [];
   private tongueG = new Graphics();
@@ -31,7 +33,8 @@ export class Gate6 extends GateFloor {
   private pillarTop: number;
 
   constructor() {
-    super(6, { wall: [[0, '#1b2350'], [0.6, '#2e4a7a'], [1, '#5f98bf']], floor: 0x6a8fb8, lip: 0xdff3ff, brick: 0.07 });
+    super(6, { wall: [[0, '#1a2a58'], [0.4, '#3e6698'], [0.75, '#8cc0e4'], [1, '#e2f4ff']], floor: 0x6a8fb8, lip: 0xdff3ff, brick: 0, tiles: false });
+    this.depth = buildGate6Depth(this.top, this.floorY, this.focusY);
     const L = G.layers;
     const fy = this.floorY;
     this.pillarTop = fy - PILLAR.h;
@@ -212,6 +215,7 @@ export class Gate6 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     const t = G.time;
     const fy = this.floorY;
     // tongues

@@ -3,6 +3,7 @@ import { Container, Graphics, Sprite } from 'pixi.js';
 import { G } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate2Depth } from './depth-gates';
 import { GateFloor, rnd, Wobble, type PointerHit } from './floor';
 import type { Critter } from '../critters/critter';
 
@@ -17,6 +18,7 @@ const PIT = 150; // half-width of the pit mouth
 export class Gate2 extends GateFloor {
   readonly name = 'Gate 2 · Laza';
   readonly plaque = GATE_PLAQUES[2];
+  private depth: ReturnType<typeof buildGate2Depth>;
 
   private flame = new Graphics();
   private tendrils = new Graphics();
@@ -31,7 +33,8 @@ export class Gate2 extends GateFloor {
   private rack = new Container();
 
   constructor() {
-    super(2, { wall: [[0, '#3d1436'], [0.6, '#7a2440'], [1, '#c2453e']], floor: 0x4a1e3a, lip: 0x9a4050, brick: 0.04 });
+    super(2, { wall: [[0, '#4a1434'], [0.4, '#8e2e48'], [0.75, '#e0604a'], [1, '#ffb070']], floor: 0x4a1e3a, lip: 0x9a4050, brick: 0, tiles: false });
+    this.depth = buildGate2Depth(this.top, this.floorY, this.focusY);
     const L = G.layers;
     const fy = this.floorY;
 
@@ -165,6 +168,7 @@ export class Gate2 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     const t = G.time;
     const heat = G.tinker.heat;
     const fy = this.floorY;

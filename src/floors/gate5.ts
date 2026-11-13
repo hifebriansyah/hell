@@ -3,6 +3,7 @@ import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { G } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate5Depth } from './depth-gates';
 import { drawLantern, GateFloor, rnd, Wobble, type PointerHit } from './floor';
 import type { Critter } from '../critters/critter';
 
@@ -14,6 +15,7 @@ const SPEED_LABEL = ['▶', '▶▶', '▶▶▶', '◀', '■'];
 export class Gate5 extends GateFloor {
   readonly name = 'Gate 5 · Saqar';
   readonly plaque = GATE_PLAQUES[5];
+  private depth: ReturnType<typeof buildGate5Depth>;
 
   private b0: { x: number; y: number };
   private b1: { x: number; y: number };
@@ -37,7 +39,8 @@ export class Gate5 extends GateFloor {
   private ticket: Text;
 
   constructor() {
-    super(5, { wall: [[0, '#220c22'], [0.6, '#4e1530'], [1, '#8a2430']], floor: 0x2e1028, lip: 0x7a3048, brick: 0.035 });
+    super(5, { wall: [[0, '#2e0c26'], [0.4, '#6a1a34'], [0.75, '#b8343a'], [1, '#f06a44']], floor: 0x2e1028, lip: 0x7a3048, brick: 0, tiles: false });
+    this.depth = buildGate5Depth(this.top, this.floorY, this.focusY);
     const L = G.layers;
     const fy = this.floorY;
     this.b0 = { x: 110, y: this.top + 300 };
@@ -191,6 +194,7 @@ export class Gate5 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     const t = G.time;
     const heat = G.tinker.heat;
     const fy = this.floorY;

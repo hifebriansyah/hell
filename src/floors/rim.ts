@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { G, HOLE, RIM_GROUND, G1_TOP } from '../engine/game';
+import { G, HOLE, RIM_GROUND, G1_TOP, SCENE_X0, SCENE_X1 } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { softDot, vGradient } from '../engine/textures';
 import { drawLantern, Floor, Wobble, type Plaque, type PointerHit } from './floor';
@@ -46,8 +46,8 @@ export class Rim extends Floor {
       [0.88, '#e7766a'],
       [1, '#ffb27a'],
     ]));
-    sky.position.set(-1400, -1700);
-    sky.width = 4000;
+    sky.position.set(SCENE_X0, -1700);
+    sky.width = SCENE_X1 - SCENE_X0;
     sky.height = RIM_GROUND + 1700;
     L.bg.addChild(sky);
     // stars
@@ -76,14 +76,14 @@ export class Rim extends Floor {
 
     // far + near silhouettes (parallax)
     const farG = new Graphics();
-    farG.moveTo(-1400, 860);
-    let x = -1400;
-    while (x < 2600) {
+    farG.moveTo(SCENE_X0, 860);
+    let x = SCENE_X0;
+    while (x < SCENE_X1) {
       const w = rnd(160, 320);
       farG.bezierCurveTo(x + w * 0.2, rnd(430, 560), x + w * 0.8, rnd(430, 560), x + w, rnd(560, 640));
       x += w;
     }
-    farG.lineTo(2600, 900).lineTo(-1400, 900).closePath().fill(0x6c3a78);
+    farG.lineTo(SCENE_X1, 900).lineTo(SCENE_X0, 900).closePath().fill(0x6c3a78);
     this.far.addChild(farG);
     const nearG = new Graphics();
     for (const [sx, h, w] of [[-700, 360, 120], [-300, 300, 90], [60, 250, 70], [1240, 280, 80], [1560, 360, 110], [1900, 300, 90]]) {
@@ -149,13 +149,8 @@ export class Rim extends Floor {
       ground.lineTo(x1, G1_TOP).lineTo(x0, G1_TOP).closePath().fill(0x5a2a4c);
       ground.rect(x0, RIM_GROUND + 4, x1 - x0, 20).fill(0x8c4560);
     };
-    lip(-1400, HOLE.x0);
-    lip(HOLE.x1, 2600);
-    // cliffs past the edges
-    ground.moveTo(-1400, RIM_GROUND).lineTo(-1400, 120).bezierCurveTo(-600, 160, -120, 260, -40, 420)
-      .bezierCurveTo(10, 520, -10, 700, 0, RIM_GROUND).closePath().fill(0x4a2244);
-    ground.moveTo(2600, RIM_GROUND).lineTo(2600, 120).bezierCurveTo(1800, 160, 1320, 260, 1240, 420)
-      .bezierCurveTo(1190, 520, 1210, 700, 1200, RIM_GROUND).closePath().fill(0x4a2244);
+    lip(SCENE_X0, HOLE.x0);
+    lip(HOLE.x1, SCENE_X1);
     // ember cracks
     const cracks = new Graphics();
     for (const [x0, y0] of [[120, 930], [300, 990], [960, 940], [1110, 1000], [60, 1020]]) {
@@ -167,11 +162,9 @@ export class Rim extends Floor {
     L.glow.addChild(crackGlow);
 
     // physics: ground on both sides of the mouth, the edges, a lid on the sky
-    this.wall((HOLE.x0 - 400) / 2, RIM_GROUND + 100, HOLE.x0 + 400, 200);
-    this.wall((HOLE.x1 + 1600) / 2, RIM_GROUND + 100, 1600 - HOLE.x1, 200);
-    this.wall(-40, 300, 80, 4000);
-    this.wall(1240, 300, 80, 4000);
-    this.wall(600, -1700, 1400, 80);
+    this.wall((SCENE_X0 + HOLE.x0) / 2, RIM_GROUND + 100, HOLE.x0 - SCENE_X0, 200);
+    this.wall((HOLE.x1 + SCENE_X1) / 2, RIM_GROUND + 100, SCENE_X1 - HOLE.x1, 200);
+    this.wall((SCENE_X0 + SCENE_X1) / 2, -1700, SCENE_X1 - SCENE_X0, 80);
 
     // ----- pokeable props -----
     // lantern posts

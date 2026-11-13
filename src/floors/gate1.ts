@@ -4,6 +4,7 @@ import { G, G1_FLOOR, G1_TOP, HOLE } from '../engine/game';
 import { setSimmer, sfx } from '../engine/audio';
 import { CAT_CRITTER, CAT_TOOL, CAT_WORLD, drawLantern, GateFloor, Wobble, type Plaque, type PointerHit } from './floor';
 import { GATE1_PLAQUE } from '../data/plaques';
+import { buildGate1Depth } from './depth';
 import type { Critter } from '../critters/critter';
 
 const { Bodies, Body, Composite } = Matter;
@@ -70,20 +71,13 @@ export class Gate1 extends GateFloor {
   private lanterns: { c: Container; w: Wobble; glow: Sprite; x: number }[] = [];
   private steamT = 0;
   private spinFound = new Set<string>();
+  private depth: ReturnType<typeof buildGate1Depth>;
 
   constructor() {
-    super(1, { wall: [[0, '#4a1d44'], [0.55, '#6e2848'], [1, '#93384a']], floor: 0x4a2244, lip: 0x8a4058 });
+    // the back wall is now a glowing haze; the layered hall (depth.ts) is painted in front of it
+    super(1, { wall: [[0, '#4a1c48'], [0.4, '#8a3e62'], [0.75, '#c85a62'], [1, '#f08a66']], floor: 0x4a2244, lip: 0x8a4058, brick: 0, tiles: false });
     const L = G.layers;
-
-    // arched alcoves with spice jars (decor)
-    const alc = new Graphics();
-    for (const ax of [150, 1080]) {
-      alc.moveTo(ax - 70, 1360).lineTo(ax - 70, 1260).bezierCurveTo(ax - 70, 1200, ax, 1170, ax, 1150)
-        .bezierCurveTo(ax, 1170, ax + 70, 1200, ax + 70, 1260).lineTo(ax + 70, 1360).closePath().fill({ color: 0x2e1236, alpha: 0.55 });
-    }
-    alc.roundRect(110, 1306, 26, 34, 8).fill(0x9ff0d6).roundRect(146, 1296, 30, 44, 10).fill(0xffd36e);
-    alc.roundRect(80, 1352, 140, 10, 4).fill(0x5a2a4c);
-    L.bg.addChild(alc);
+    this.depth = buildGate1Depth(this.top, this.floorY, this.focusY);
 
     // ----- lanterns -----
     for (const lx of [260, 1120]) {
@@ -369,6 +363,7 @@ export class Gate1 extends GateFloor {
 
   update(dt: number, camY: number, near: boolean) {
     super.update(dt, camY, near);
+    this.depth.update(dt, near);
     const t = G.time;
     const tk = G.tinker;
     this.fireBoost = Math.max(0, this.fireBoost - dt * 0.5);

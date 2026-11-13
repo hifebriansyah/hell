@@ -1,7 +1,7 @@
 import './style.css';
 import Matter from 'matter-js';
 import { Application, Container, Graphics } from 'pixi.js';
-import { floorAt, G, STEP, TINKER_DEFAULT, WORLD_BOTTOM, type Layers } from './engine/game';
+import { floorAt, G, SCENE_X0, SCENE_X1, STEP, TINKER_DEFAULT, W, WORLD_BOTTOM, type Layers } from './engine/game';
 import { Fx } from './engine/fx';
 import { sfx, unlockAudio } from './engine/audio';
 import { Critter } from './critters/critter';
@@ -20,7 +20,7 @@ import { Hud } from './ui/hud';
 import { initPwa } from './pwa';
 import { DISCOVERIES, discoveries } from './data/discoveries';
 
-const { Engine, Events, Body, Constraint, Composite } = Matter;
+const { Bodies, Engine, Events, Body, Constraint, Composite } = Matter;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
@@ -89,6 +89,8 @@ async function boot() {
     viewFloor: 0,
     pointer: { x: 0, y: 0, active: false },
     view: { top: 0, bottom: 0 },
+    parallax: { x: 0, y: 0 },
+    camY: 0,
     discover(id: string, who?: Critter) {
       const first = discoveries.bump(id);
       if (!first) return;
@@ -109,6 +111,14 @@ async function boot() {
   const rim = new Rim();
   const gate1 = new Gate1();
   const floors: Floor[] = [rim, gate1, new Gate2(), new Gate3(), new Gate4(), new Gate5(), new Gate6(), new Gate7()];
+
+  // ----- screen-edge boundary -----
+  // There are no drawn side walls: the scene runs edge to edge. Two invisible walls keep critters on screen,
+  // sitting at the screen's edges (never closer in than the room itself, 0..W).
+  const edgeH = WORLD_BOTTOM + 2200, edgeY = (WORLD_BOTTOM - 1800) / 2;
+  const edgeL = Bodies.rectangle(-40, edgeY, 80, edgeH, { isStatic: true, label: 'edge', friction: 0.3 });
+  const edgeR = Bodies.rectangle(W + 40, edgeY, 80, edgeH, { isStatic: true, label: 'edge', friction: 0.3 });
+  Composite.add(engine.world, [edgeL, edgeR]);
 
   // ----- camera -----
   const cam = { x: 600, y: rim.focusY, ty: rim.focusY, s: 1 };
@@ -403,7 +413,7 @@ async function boot() {
     for (const c of G.critters) {
       const b = c.body;
       // strays come back from the Rim's sky
-      if (b.position.x < -200 || b.position.x > 1400 || b.position.y < -1750 || b.position.y > WORLD_BOTTOM + 300) {
+      if (b.position.x < SCENE_X0 + 50 || b.position.x > SCENE_X1 - 50 || b.position.y < -1750 || b.position.y > WORLD_BOTTOM + 300) {
         Body.setPosition(b, { x: rnd(200, 420), y: -300 });
         Body.setVelocity(b, { x: 0, y: 2 });
       }
@@ -433,6 +443,18 @@ async function boot() {
     cam.ty = clamp(cam.ty, -700 + vh * 0.2, WORLD_BOTTOM - vh / 2 + 40);
     cam.y += (cam.ty - cam.y) * Math.min(1, dt * 7);
     cam.x = vw >= 1300 ? 600 : clamp(cam.x, vw / 2 - 40, 1240 - vw / 2);
+    {
+      const l = clamp(Math.min(0, cam.x - vw / 2), SCENE_X0 + 40, 0);
+      const r = clamp(Math.max(W, cam.x + vw / 2), W, SCENE_X1 - 40);
+      if (Math.abs(edgeL.position.x - (l - 40)) > 0.5) Body.setPosition(edgeL, { x: l - 40, y: edgeY });
+      if (Math.abs(edgeR.position.x - (r + 40)) > 0.5) Body.setPosition(edgeR, { x: r + 40, y: edgeY });
+      // the window got narrower: anyone left outside the new edges is pulled back in
+      for (const c of G.critters) {
+        if (c.held) continue;
+        if (c.x < l) Body.setPosition(c.body, { x: l + c.def.r + 10, y: c.y });
+        else if (c.x > r) Body.setPosition(c.body, { x: r - c.def.r - 10, y: c.y });
+      }
+    }
     world.scale.set(cam.s);
     world.position.set(app.screen.width / 2 - cam.x * cam.s, app.screen.height / 2 - cam.y * cam.s);
 
@@ -458,6 +480,16 @@ async function boot() {
       }
     }
     G.view = { top: cam.y - vh / 2, bottom: cam.y + vh / 2 };
+    G.camY = cam.y;
+    // parallax "head position": follows a hovering mouse, otherwise a slow idle sway so touch screens still breathe
+    {
+      const mouse = G.pointer.active && !grab && !pan;
+      const tx = mouse ? clamp((screenPt.x / app.screen.width - 0.5) * 2, -1, 1) : Math.sin(G.time * 0.31) * 0.35;
+      const ty = mouse ? clamp((screenPt.y / app.screen.height - 0.5) * 2, -1, 1) : Math.sin(G.time * 0.23) * 0.2;
+      const k = Math.min(1, dt * 2.5);
+      G.parallax.x += (tx - G.parallax.x) * k;
+      G.parallax.y += (ty - G.parallax.y) * k;
+    }
 
     const floor = floorAt(cam.y);
     G.viewFloor = floor;

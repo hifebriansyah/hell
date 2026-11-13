@@ -1,9 +1,10 @@
 import Matter from 'matter-js';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import { G, gateTop, G7_ROOM, TRAP_SIDE, trapSpan } from '../engine/game';
+import { G, gateTop, G7_ROOM, SCENE_X0, SCENE_X1, TRAP_SIDE, trapSpan } from '../engine/game';
 import { sfx } from '../engine/audio';
 import { vGradient } from '../engine/textures';
 import { GATE_PLAQUES } from '../data/plaques';
+import { buildGate7Depth } from './depth-gates';
 import { clamp, Floor, rnd, type PointerHit } from './floor';
 
 const { Body } = Matter;
@@ -26,21 +27,20 @@ export class Gate7 extends Floor {
   private depth: Text;
   private depthM = 0;
   private hole = trapSpan(TRAP_SIDE[6]);
+  private scenery: ReturnType<typeof buildGate7Depth>;
+  private fall = 0;
 
   constructor() {
     super();
     const L = G.layers;
     const bg = new Sprite(vGradient('abyss', [[0, '#2a0c2a'], [0.5, '#170818'], [1, '#08030a']]));
-    bg.position.set(0, this.top);
-    bg.width = 1200;
+    bg.position.set(SCENE_X0, this.top);
+    bg.width = SCENE_X1 - SCENE_X0;
     bg.height = G7_ROOM;
-    L.bg.addChild(bg, this.streaks);
-    const earth = new Graphics();
-    earth.rect(-1400, this.top, 1400, G7_ROOM + 600).fill(0x1c0a20);
-    earth.rect(1200, this.top, 1400, G7_ROOM + 600).fill(0x1c0a20);
-    earth.rect(-22, this.top, 22, G7_ROOM + 600).fill(0x3a1838);
-    earth.rect(1200, this.top, 22, G7_ROOM + 600).fill(0x3a1838);
-    L.front.addChild(earth);
+    L.bg.addChild(bg);
+    this.scenery = buildGate7Depth(this.top, this.bottom, this.focusY);
+    L.bg.addChild(this.streaks);
+    // no shaft walls drawn: the abyss carries on sideways, edge to edge
 
     // rock ledges to bounce off
     const ledges = new Graphics();
@@ -52,8 +52,6 @@ export class Gate7 extends Floor {
     L.front.addChild(ledges);
 
     // walls of the shaft
-    this.wall(-40, this.top + G7_ROOM / 2, 80, G7_ROOM + 400);
-    this.wall(1240, this.top + G7_ROOM / 2, 80, G7_ROOM + 400);
 
     // depth odometer
     const od = new Graphics();
@@ -160,12 +158,14 @@ export class Gate7 extends Floor {
       if (c.y > this.bottom - 40) Body.setPosition(c.body, { x: c.x, y: this.top + 120 + c.def.r + ((c.y - this.bottom) % 200 + 200) % 200 });
     }
     // the walls still rush past fast, so it reads as a plunge even in slow motion
-    this.scroll += (n ? fallSum / n : 2) * 3.5;
+    this.fall = n ? fallSum / n : 2;
+    this.scroll += this.fall * 3.5;
     this.depthM += (n ? fallSum / n : 0) * 0.18;
   }
 
   update(dt: number, _camY: number, near: boolean) {
     const t = G.time;
+    this.scenery.update(dt, near, this.fall);
     // speed streaks rushing up the walls
     const g = this.streaks;
     g.clear();
