@@ -1,6 +1,6 @@
 import './style.css';
 import Matter from 'matter-js';
-import { Application, Container } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import { floorAt, G, STEP, TINKER_DEFAULT, WORLD_BOTTOM, type Layers } from './engine/game';
 import { Fx } from './engine/fx';
 import { sfx, unlockAudio } from './engine/audio';
@@ -23,10 +23,22 @@ const { Engine, Events, Body, Constraint, Composite } = Matter;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+// Always play in landscape: when the window is portrait, the whole #app (canvas + HUD) is rotated 90°.
+const appEl = document.getElementById('app')!;
+let portrait = false;
+function applyOrientation() {
+  portrait = window.innerHeight > window.innerWidth;
+  document.body.classList.toggle('portrait', portrait);
+}
+applyOrientation();
+/** pointer position in the (possibly rotated) app's own coordinates */
+const local = (e: { clientX: number; clientY: number }) =>
+  portrait ? { x: e.clientY, y: window.innerWidth - e.clientX } : { x: e.clientX, y: e.clientY };
+
 async function boot() {
   const app = new Application();
   await app.init({
-    resizeTo: window,
+    resizeTo: appEl,
     antialias: true,
     autoDensity: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2.5),
@@ -34,6 +46,9 @@ async function boot() {
     preference: 'webgl',
   });
   document.getElementById('stage')!.appendChild(app.canvas);
+  const reorient = () => { applyOrientation(); app.resize(); };
+  window.addEventListener('resize', reorient);
+  window.addEventListener('orientationchange', () => setTimeout(reorient, 50));
   try { await document.fonts.load('800 30px "Baloo 2"'); } catch { /* fallback font is fine */ }
 
   // ----- scene graph -----
@@ -49,7 +64,9 @@ async function boot() {
     over: new Container(),
   };
   layers.glow.blendMode = 'add';
-  world.addChild(layers.bg, layers.back, layers.critters, layers.front, layers.fx, layers.glow, layers.over);
+  // stage blackout: hides the floors above/below the gate the camera has settled on
+  const blackout = new Graphics();
+  world.addChild(layers.bg, layers.back, layers.critters, layers.front, layers.fx, layers.glow, layers.over, blackout);
   const fx = new Fx();
   layers.fx.addChild(fx.view);
   layers.glow.addChild(fx.glow);
@@ -97,7 +114,17 @@ async function boot() {
   const viewW = () => app.screen.width / cam.s;
   const fitScale = () => { cam.s = Math.min(app.screen.height / 1060, app.screen.width / 860); };
   fitScale();
-  const goto = (f: number) => { cam.ty = floors[clamp(Math.round(f), 0, 7)].focusY; };
+  /** the floor the camera is heading to; every scroll gesture settles on one */
+  let snapFloor = 0;
+  const goto = (f: number) => {
+    snapFloor = clamp(Math.round(f), 0, 7);
+    cam.ty = floors[snapFloor].focusY;
+  };
+  const nearest = (y: number) => {
+    let best = 0;
+    for (let i = 1; i < floors.length; i++) if (Math.abs(floors[i].focusY - y) < Math.abs(floors[best].focusY - y)) best = i;
+    return best;
+  };
   const m = /^#gate-(\d)$/.exec(location.hash);
   goto(m ? Number(m[1]) : 0);
   cam.y = cam.ty;
@@ -185,6 +212,7 @@ async function boot() {
     y: (sy - app.screen.height / 2) / cam.s + cam.y,
   });
   let screenPt = { x: 0, y: 0 };
+  let carried = false;
 
   const release = (tapped: boolean) => {
     if (!grab) return;
@@ -201,17 +229,8 @@ async function boot() {
         lastTap = { c: null, t: 0 };
       } else {
         lastTap = { c, t: now };
-        if (G.tool === 'tongs') {
-          if (!floors[c.floor].onTongs(c)) {
-            const dx = c.x - down.x, dy = c.y - down.y;
-            const d = Math.hypot(dx, dy) || 1;
-            Body.setVelocity(c.body, { x: (dx / d) * 9, y: (dy / d) * 9 - 6 });
-            c.hurt(8, 'poke');
-            c.boop();
-            sfx.pop();
-            fx.emit('star', down.x, down.y, 4, { size: 0.6 });
-          }
-        } else c.boop();
+        // a tap boops; some floors give it a meaning of their own (Gate 2: pluck the coat)
+        if (!floors[c.floor].onTongs(c)) c.boop();
       }
     }
     grab = null;
@@ -229,13 +248,14 @@ async function boot() {
 
   const canvas = app.canvas;
   canvas.addEventListener('pointerdown', (e) => {
+    const q = local(e);
     unlockAudio();
     hud.closeAll();
-    canvas.setPointerCapture(e.pointerId);
-    const p = toWorld(e.offsetX, e.offsetY);
-    screenPt = { x: e.offsetX, y: e.offsetY };
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointer */ }
+    const p = toWorld(q.x, q.y);
+    screenPt = { x: q.x, y: q.y };
     G.pointer = { ...p, active: true };
-    down = { x: p.x, y: p.y, t: performance.now(), moved: false, sx: e.offsetX, sy: e.offsetY };
+    down = { x: p.x, y: p.y, t: performance.now(), moved: false, sx: q.x, sy: q.y };
     // critters first, front-most last in the list
     for (let i = G.critters.length - 1; i >= 0; i--) {
       const c = G.critters[i];
@@ -258,25 +278,36 @@ async function boot() {
     const f = floors[floorAt(p.y)];
     const h = f.pointerDown(p.x, p.y);
     if (h) { hit = h; return; }
-    pan = { sx: e.offsetX, sy: e.offsetY, cx: cam.x, cy: cam.y };
+    pan = { sx: q.x, sy: q.y, cx: cam.x, cy: cam.y };
   });
   canvas.addEventListener('pointermove', (e) => {
-    const p = toWorld(e.offsetX, e.offsetY);
-    screenPt = { x: e.offsetX, y: e.offsetY };
+    const q = local(e);
+    const p = toWorld(q.x, q.y);
+    screenPt = { x: q.x, y: q.y };
     G.pointer = { ...p, active: true };
-    if (Math.hypot(e.offsetX - down.sx, e.offsetY - down.sy) > 8) down.moved = true;
+    if (Math.hypot(q.x - down.sx, q.y - down.sy) > 8) down.moved = true;
     if (grab) grab.con.pointA = { x: p.x, y: p.y };
     else if (hit) hit.move(p.x, p.y);
     else if (pan) {
-      cam.x = pan.cx - (e.offsetX - pan.sx) / cam.s;
-      cam.y = cam.ty = pan.cy - (e.offsetY - pan.sy) / cam.s;
+      cam.x = pan.cx - (q.x - pan.sx) / cam.s;
+      cam.y = cam.ty = pan.cy - (q.y - pan.sy) / cam.s;
     }
   });
   const up = (e: PointerEvent) => {
-    const p = toWorld(e.offsetX, e.offsetY);
+    const q = local(e);
+    const p = toWorld(q.x, q.y);
     const tapped = !down.moved && performance.now() - down.t < 350;
-    if (grab) release(tapped);
-    else if (hit) hit.up(p.x, p.y, tapped);
+    if (grab) {
+      release(tapped);
+      if (carried) goto(nearest(cam.ty)); // carried a critter across floors: settle on a gate
+    } else if (hit) hit.up(p.x, p.y, tapped);
+    else if (pan) {
+      // a pan always ends on a gate: drag far enough for the next one, else spring back
+      const from = nearest(pan.cy);
+      const dragged = q.y - pan.sy;
+      goto(Math.abs(dragged) > app.screen.height * 0.12 ? from - Math.sign(dragged) : nearest(cam.y));
+    }
+    carried = false;
     hit = null;
     pan = null;
     if (e.pointerType !== 'mouse') G.pointer.active = false;
@@ -284,9 +315,25 @@ async function boot() {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('pointerleave', () => { G.pointer.active = false; });
+  // Wheel / trackpad: one gesture = one gate. Deltas pile up until they pass a threshold, then the
+  // camera glides to the next gate and further input is ignored until the wheel goes quiet
+  // (so a trackpad's momentum tail doesn't skip several gates).
+  let wheelAcc = 0;
+  let wheelLock = false;
+  let wheelIdle = 0;
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    cam.ty += (e.deltaY * (e.deltaMode === 1 ? 30 : 1)) / cam.s;
+    const k = e.deltaMode === 1 ? 30 : 1;
+    cam.x += (e.deltaX * k) / cam.s; // sideways trackpad pan on narrow screens
+    clearTimeout(wheelIdle);
+    wheelIdle = window.setTimeout(() => { wheelLock = false; wheelAcc = 0; }, 220);
+    if (wheelLock) return;
+    wheelAcc += e.deltaY * k;
+    if (Math.abs(wheelAcc) > 40) {
+      goto(snapFloor + Math.sign(wheelAcc));
+      wheelLock = true;
+      wheelAcc = 0;
+    }
   }, { passive: false });
 
   window.addEventListener('keydown', (e) => {
@@ -294,10 +341,9 @@ async function boot() {
     unlockAudio();
     if (/^[0-7]$/.test(e.key)) { goto(Number(e.key)); return; }
     switch (e.key) {
-      case 'ArrowUp': case 'PageUp': goto(G.viewFloor - 1); break;
-      case 'ArrowDown': case 'PageDown': goto(G.viewFloor + 1); break;
+      case 'ArrowUp': case 'PageUp': goto(snapFloor - 1); break;
+      case 'ArrowDown': case 'PageDown': goto(snapFloor + 1); break;
       case 'a': case 'A': CRITTERS.forEach((d, i) => setTimeout(() => spawn(d.id, i > 0), i * 220)); break;
-      case 't': case 'T': document.getElementById('toolBtn')!.click(); break;
       case 'l': case 'L': gate1.slamLid(); break;
       case 'Escape': hud.closeAll(); break;
     }
@@ -350,8 +396,8 @@ async function boot() {
     // carry a dragged critter across floors by holding it near the top/bottom edge
     if (grab) {
       const H = app.screen.height;
-      if (screenPt.y < H * 0.1) cam.ty -= 900 * dt;
-      else if (screenPt.y > H * 0.9) cam.ty += 900 * dt;
+      if (screenPt.y < H * 0.1) { cam.ty -= 900 * dt; carried = true; }
+      else if (screenPt.y > H * 0.9) { cam.ty += 900 * dt; carried = true; }
       grab.con.pointA = toWorld(screenPt.x, screenPt.y);
     }
 
@@ -363,6 +409,28 @@ async function boot() {
     cam.x = vw >= 1300 ? 600 : clamp(cam.x, vw / 2 - 40, 1240 - vw / 2);
     world.scale.set(cam.s);
     world.position.set(app.screen.width / 2 - cam.x * cam.s, app.screen.height / 2 - cam.y * cam.s);
+
+    // blackout everything outside the settled gate; fades away while gliding between gates
+    {
+      const fi = nearest(cam.y);
+      const fl = floors[fi];
+      const k = clamp(1 - Math.abs(cam.y - fl.focusY) / 160, 0, 1);
+      const b = blackout;
+      b.clear();
+      if (k > 0.01) {
+        const x0 = cam.x - vw, w = vw * 2;
+        const feather = 36, steps = 6;
+        const shade = (y0: number, y1: number, a: number) => { if (y1 > y0) b.rect(x0, y0, w, y1 - y0).fill({ color: 0x140812, alpha: a * k }); };
+        // above the gate (the Rim has open sky above, so nothing to hide there)
+        // fully dark beyond the gate's edges; the soft edge sits just inside them, over ceiling and floor slab
+        if (fi > 0) {
+          shade(cam.y - vh, fl.top, 1);
+          for (let i = 0; i < steps; i++) shade(fl.top + (i * feather) / steps, fl.top + ((i + 1) * feather) / steps, 1 - (i + 0.5) / steps);
+        }
+        shade(fl.bottom, cam.y + vh, 1);
+        for (let i = 0; i < steps; i++) shade(fl.bottom - feather + (i * feather) / steps, fl.bottom - feather + ((i + 1) * feather) / steps, (i + 0.5) / steps);
+      }
+    }
     G.view = { top: cam.y - vh / 2, bottom: cam.y + vh / 2 };
 
     const floor = floorAt(cam.y);

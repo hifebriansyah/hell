@@ -23,14 +23,14 @@ Deep links: `#rim`, `#gate-1` … `#gate-7`.
 
 | Input | Does |
 | --- | --- |
-| Drag a critter | **Hand** mode: dangle and fling. **Tongs** mode: stiff pinch (switch in the tray) |
-| Tap a critter | Hand: boop. Tongs: poke (on Gate 2: pluck the coat off) |
+| Drag a critter | Dangle and fling |
+| Tap a critter | Boop (on Gate 2: pluck the coat off) |
 | Double-tap a critter | Cycle through unlocked hats |
-| Drag empty space, mouse wheel | Scroll the dollhouse |
+| Drag empty space, mouse wheel / trackpad | Scroll the dollhouse. It always snaps to a gate: one wheel or trackpad gesture = one gate, and a short drag springs back |
 | Hold a dragged critter near the top or bottom edge | Carry it to another floor |
 | Right rail (`⌂`, 1–7) or keys `0`–`7`, `↑`/`↓` | Jump to a floor |
-| Tray | Drop a critter in (it arrives on the floor you are looking at), tap again to send it home |
-| `A` | Everyone at once · `T` toggle tool · `L` slam the Gate 1 lid · `Esc` close panels |
+| Critter tray (left edge) | Drop a critter in (it arrives on the floor you are looking at), tap again to send it home |
+| `A` | Everyone at once · `L` slam the Gate 1 lid · `Esc` close panels |
 | Corner buttons | Tinker sliders, Plaque (cited sources for the floor on screen), Discoveries + Eternity ledger, Mute |
 
 Every gate (1–6) has a **lever and trapdoor** that drops critters into the gate below. The trapdoors zigzag left and right.
@@ -41,7 +41,7 @@ Every gate (1–6) has a **lever and trapdoor** that drops critters into the gat
 | --- | --- | --- |
 | **The Rim** | Twilight arrivals ledge with a mouth that drops straight into Gate 1's pot. Lanterns, coin pile, smoke vent (blasts critters up), ember stones (warm + soot), clouds | Full House, Rim Splat |
 | **1 · Jahannam** | Cutaway cauldron. Buoyant soup that turns critters lobster-pink with ear-steam whistles. Ladle whirlpool (drag or tap) → dizzy spirals. Slam the lid → rattling pressure → champagne-cork pop (sometimes up through the mouth into the Rim). Frost slider freezes the soup | Boiled Cork-Pop, Champagne Lid-Pop, Soup Spin Cycle |
-| **2 · Laza** | A leaping flame in a pit. Critters keep running away and a flame tendril yanks them back. Touching it peels their coat (or roasts them if already peeled). Bellows heat-gust, tongs pluck. Peeled looks: hairless mortified Boba `>///<`, rubber-duck Mochi with one feather, polka-dot boxers Pebble `-_-`, gummy-core Gloop, bald dandelion-puff Toto | Peeled & Roasted (ash pile with blinking eyes), Polka-Dot Reveal, Clothing Optional |
+| **2 · Laza** | A leaping flame in a pit. Critters keep running away and a flame tendril yanks them back. Touching it peels their coat (or roasts them if already peeled). Bellows heat-gust, or tap a critter to pluck its coat. Peeled looks: hairless mortified Boba `>///<`, rubber-duck Mochi with one feather, polka-dot boxers Pebble `-_-`, gummy-core Gloop, bald dandelion-puff Toto | Peeled & Roasted (ash pile with blinking eyes), Polka-Dot Reveal, Clothing Optional |
 | **3 · al-Hutamah** | Ornate terracotta-and-gold press. Hit the stomp button, tap or drag the head down. Critters become physically flat paper rugs, then pop back round. Springy accordion side walls. A "days without a pancake" board | Pancaked Flat, Short Stack |
 | **4 · al-Sa'ir** | Thorny Zaqqum tree with burning spiky fruit. Shake the trunk or pluck. Critters turn away and clamp their mouths when you bring fruit close, so you have to shove it in. Then: red face, flame breath, frantic hopping, fireball pop. Pebble just eats it and says *pardon.* "Today's special" menu | Zaqqum Fireball Pop, Polite Smoke Burp |
 | **5 · Saqar** | Slanted ember conveyor dragging critters belly-down, face-first into a fire grate. Boba leaves claw skid marks, Gloop a slime trail, Mochi back-paddles. Crank cycles ▶ ▶▶ ▶▶▶ ◀ ■. Scorched critters go back to the top of the belt. 19 lanterns overhead, "NOW SERVING ∞" ticket machine | Conveyor Scorched, Wrong Way Round |
@@ -66,7 +66,8 @@ The whole roster has 20 discoveries and 11 unlockable hats. Statuses stack acros
 - Gate 7 has rock ledges, and critters can't rest on them.
 
 **Simplified or changed**
-- Gate 2: peeling happens through the flame, the bellows gust and tongs taps. A hand-shake gesture to peel was not built. Coats regrow after about 7 seconds.
+- No BBQ Tongs tool: the tray has no tool switch, so dragging is always the dangly hand. Gate 2's tongs-pluck became a plain tap.
+- Gate 2: peeling happens through the flame, the bellows gust and taps. A hand-shake gesture to peel was not built. Coats regrow after about 7 seconds.
 - Gate 3: a big **stomp button** instead of a pull lever. You can also drag the press head itself.
 - Gate 5: the crank is **tap-to-cycle** (5 settings), not a continuous wind-up.
 - Gate 6: icicles drop, but there are no snowballs.

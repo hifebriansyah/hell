@@ -1,5 +1,5 @@
 import { G, TINKER_DEFAULT, type Tinker } from '../engine/game';
-import { isMuted, setMuted, sfx, unlockAudio } from '../engine/audio';
+import { isMuted, setMuted, unlockAudio } from '../engine/audio';
 import { CRITTERS, type CritterId } from '../critters/defs';
 import { DISCOVERIES, discoveries, GATE_LABEL, ledger, type GateKey } from '../data/discoveries';
 import type { Plaque } from '../floors/floor';
@@ -28,16 +28,6 @@ export class Hud {
         unlockAudio();
         this.onGoto(Number(b.dataset.floor));
       });
-    });
-
-    // tool
-    const tool = $('#toolBtn');
-    tool.addEventListener('click', () => {
-      unlockAudio();
-      G.tool = G.tool === 'hand' ? 'tongs' : 'hand';
-      tool.classList.toggle('tongs', G.tool === 'tongs');
-      tool.title = G.tool === 'hand' ? 'Tool: Hand (tap to switch to BBQ Tongs)' : 'Tool: BBQ Tongs (tap to switch to Hand)';
-      sfx.pop();
     });
 
     // corner
